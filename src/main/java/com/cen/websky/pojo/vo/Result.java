@@ -26,4 +26,9 @@ public class Result {
     public static Result error(String msg) {
         return new Result(0, msg, null);
     }
+
+    //自定义失败响应
+    public static Result error(int code, String msg) {
+        return new Result(code, msg, null);
+    }
 }

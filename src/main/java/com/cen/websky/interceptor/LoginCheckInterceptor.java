@@ -18,6 +18,11 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         System.out.println("preHandle .... ");
+
+        // 添加跨域配置
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Headers", "*");
+
         //1.获取请求url
         //2.判断请求url中是否包含login，如果包含，说明是登录操作，放行
 
@@ -30,7 +35,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             log.info("Token不存在");
 
             //创建响应结果对象
-            Result responseResult = Result.error("NOT_LOGIN");
+            Result responseResult = Result.error(401, "NOT_LOGIN");
             //把Result对象转换为JSON格式字符串 (fastjson是阿里巴巴提供的用于实现对象和json的转换工具类)
             String json = JSONObject.toJSONString(responseResult);
             //设置响应头（告知浏览器：响应的数据类型为json、响应的数据编码表为utf-8）
@@ -48,7 +53,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             log.info("令牌解析失败!");
 
             //创建响应结果对象
-            Result responseResult = Result.error("NOT_LOGIN");
+            Result responseResult = Result.error(401, "NOT_LOGIN");
             //把Result对象转换为JSON格式字符串 (fastjson是阿里巴巴提供的用于实现对象和json的转换工具类)
             String json = JSONObject.toJSONString(responseResult);
             //设置响应头

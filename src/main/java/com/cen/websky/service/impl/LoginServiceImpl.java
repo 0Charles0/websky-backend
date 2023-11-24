@@ -33,6 +33,6 @@ public class LoginServiceImpl implements LoginService {
             String token = JwtUtils.generateJwt(claims);
             return Result.success(token);
         }
-        return Result.error("邮箱或密码错误");
+        return Result.error(401,"邮箱或密码错误");
     }
 }
