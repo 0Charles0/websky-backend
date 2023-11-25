@@ -25,4 +25,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .one();
         return user;
     }
+
+    @Override
+    public User register(User user) {
+        // 判断邮箱是否已注册。已注册返回null，未注册返回用户id等信息
+        if (lambdaQuery()
+                .select(User::getId, User::getUsername, User::getPassword, User::getEmail, User::getImage)
+                .eq(User::getEmail, user.getEmail())
+                .one() != null) {
+            return null;
+        } else {
+            save(user);
+            user.setId(lambdaQuery()
+                    .select(User::getId)
+                    .eq(User::getEmail, user.getEmail())
+                    .one().getId());
+            return user;
+        }
+    }
 }

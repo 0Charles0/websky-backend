@@ -20,7 +20,6 @@ public class LoginServiceImpl implements LoginService {
     public Result login(User user) {
         //调用业务层：登录功能
         User loginUser = userService.login(user);
-
         //判断：登录用户是否存在
         if (loginUser != null) {
             //自定义信息
@@ -28,11 +27,10 @@ public class LoginServiceImpl implements LoginService {
             claims.put("id", loginUser.getId());
             claims.put("username", loginUser.getUsername());
             claims.put("email", loginUser.getEmail());
-
             //使用JWT工具类，生成身份令牌
             String token = JwtUtils.generateJwt(claims);
             return Result.success(token);
         }
-        return Result.error(401,"邮箱或密码错误");
+        return Result.error(401, "邮箱或密码错误");
     }
 }

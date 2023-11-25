@@ -1,7 +1,7 @@
 package com.cen.websky.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cen.websky.pojo.User;
+import com.cen.websky.pojo.po.User;
 import com.cen.websky.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

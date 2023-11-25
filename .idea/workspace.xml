@@ -5,19 +5,29 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="da7d0385-108c-4d33-ac87-23b0c4e15275" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/controller/RegisterController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/EmailService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/RegisterService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/impl/EmailServiceImpl.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/impl/RegisterServiceImpl.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/utils/VerificationCodeGenerator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/controller/HelloController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/controller/HelloController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/controller/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/controller/LoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/config/WebConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/config/WebConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/interceptor/LoginCheckInterceptor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/interceptor/LoginCheckInterceptor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/pojo/vo/Result.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/pojo/vo/Result.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/UserService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/impl/LoginServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/impl/LoginServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/utils/JwtUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/utils/JwtUtils.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/controller/HelloController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/controller/HelloController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/controller/LoginController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/controller/LoginController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/impl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/cen/websky/service/impl/UserServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/cen/websky/controller/UserControllerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/cen/websky/controller/UserControllerTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/config/WebConfig.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/config/WebConfig.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/interceptor/LoginCheckInterceptor.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/interceptor/LoginCheckInterceptor.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/pojo/vo/Result.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/pojo/vo/Result.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/service/UserService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/service/UserService.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/service/impl/LoginServiceImpl.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/service/impl/LoginServiceImpl.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/utils/JwtUtils.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/utils/JwtUtils.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/cen/websky/service/impl/UserServiceImpl.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/cen/websky/service/impl/UserServiceImpl.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/test-classes/com/cen/websky/WebskyBackendApplicationTests.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/test-classes/com/cen/websky/controller/UserControllerTest.class" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,6 +66,9 @@
     <option name="jreName" value="17" />
   </component>
   <component name="ProjectId" id="2YTb64zmKw7y28fN8m5I86XVwSZ" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -150,7 +163,7 @@
       <updated>1700552338572</updated>
       <workItem from="1700552340295" duration="10026000" />
       <workItem from="1700653589056" duration="24396000" />
-      <workItem from="1700807767360" duration="16196000" />
+      <workItem from="1700807767360" duration="26913000" />
     </task>
     <servers />
   </component>
