@@ -4,18 +4,16 @@ import com.cen.websky.pojo.po.User;
 import com.cen.websky.pojo.vo.Result;
 import com.cen.websky.service.LoginService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/login")
 @CrossOrigin(origins = "*")
 public class LoginController {
     private final LoginService loginService;
 
-    @PostMapping("/login")
+    @PostMapping()
     public Result login(@RequestBody User user) {
         return loginService.login(user);
     }

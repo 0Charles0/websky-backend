@@ -1,5 +1,6 @@
 package com.cen.websky.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cen.websky.pojo.po.User;
 import com.cen.websky.mapper.UserMapper;
@@ -42,5 +43,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     .one().getId());
             return user;
         }
+    }
+
+    @Override
+    public void status(String email) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.lambda()
+                .eq(User::getEmail, email);
+        Boolean status = getOne(wrapper).getStatus();
+        User user = new User();
+        user.setStatus(!status);
+        update(user, wrapper);
     }
 }

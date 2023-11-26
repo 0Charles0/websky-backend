@@ -3,11 +3,7 @@ package com.cen.websky.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cen.websky.pojo.po.User;
 
-import java.util.List;
-
 public interface UserService extends IService<User> {
-    List<User> list();
-
     /**
      * 用户登录
      *
@@ -23,4 +19,6 @@ public interface UserService extends IService<User> {
      * @return
      */
     User register(User user);
+
+    void status(String email);
 }
