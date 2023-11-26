@@ -7,6 +7,6 @@
 out
 gen
 
-# 新增git rm -r --cached .
+# 新增
 target/
 application.properties
