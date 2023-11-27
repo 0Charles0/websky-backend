@@ -10,16 +10,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class CaptchaServiceImpl extends ServiceImpl<CaptchaMapper, Captcha> implements CaptchaService {
     @Override
-    public Boolean status(Captcha captcha) {
+    public Boolean isValidCaptcha(Captcha captcha) {
         QueryWrapper<Captcha> wrapper = new QueryWrapper<>();
         wrapper.lambda()
                 .eq(Captcha::getEmail, captcha.getEmail())
                 .eq(Captcha::getCode, captcha.getCode());
-        if (getOne(wrapper) != null) {
+        if (getOne(wrapper, false) != null) {
             remove(wrapper);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 }

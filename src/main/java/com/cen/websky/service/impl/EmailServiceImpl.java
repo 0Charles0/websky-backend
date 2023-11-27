@@ -16,7 +16,7 @@ public class EmailServiceImpl implements EmailService {
     private String from;
 
     @Override
-    public void sendVerificationCode(String to, String code) {
+    public void sendVerificationLink(String to, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(to);

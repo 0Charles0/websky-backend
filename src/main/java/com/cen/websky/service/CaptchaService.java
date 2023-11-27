@@ -5,10 +5,10 @@ import com.cen.websky.pojo.po.Captcha;
 
 public interface CaptchaService extends IService<Captcha> {
     /**
-     * 判断验证码是否正确
+     * 检验验证码有效性
      *
      * @param captcha
      * @return
      */
-    Boolean status(Captcha captcha);
+    Boolean isValidCaptcha(Captcha captcha);
 }

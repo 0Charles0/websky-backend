@@ -10,7 +10,7 @@ import java.util.Map;
 public class JwtUtils {
 
     private static String signKey = "websky";//签名密钥
-    private static Long expire = 43200L; //有效时间
+    private static Long expire = /*TODO 43200000L*/43200L; //有效时间
 
     /**
      * 生成JWT令牌
