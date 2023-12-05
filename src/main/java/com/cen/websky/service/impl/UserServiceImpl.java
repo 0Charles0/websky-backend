@@ -56,7 +56,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     // 自定义 token 信息
                     Map<String, Object> claims = new HashMap<>();
                     claims.put("id", loginUser.getId());
-                    claims.put("username", loginUser.getUsername());
+                    claims.put("username", loginUser.getUserName());
                     claims.put("email", loginUser.getEmail());
                     // 使用JWT工具类，生成身份令牌
                     String token = JwtUtils.generateJwt(claims);
@@ -100,7 +100,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             toggleStatusByEmail(captcha.getEmail());
             return Result.success("注册成功");
         }
-        return Result.error("注册验证失败");
+        return Result.error(401, "注册验证失败");
     }
 
     @Override

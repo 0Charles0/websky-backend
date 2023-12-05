@@ -16,3 +16,9 @@ mybatis-plus:
 #    db-config:
 #      id-type: auto # 全局id类型为自增长
   mapper-locations: "classpath*:/mapper/**/*.xml" # Mapper.xml文件地址，当前这个是默认值。
+aliyun:
+  oss:
+    accessKeyId: 身份ID
+    accessKeySecret: 身份密钥
+    bucketName: websky-cloud
+    endpoint: https://oss-cn-shenzhen.aliyuncs.com
