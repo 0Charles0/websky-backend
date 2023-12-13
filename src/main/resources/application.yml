@@ -10,11 +10,15 @@ spring:
     host: smtp.qq.com
     username: 1913896486@qq.com
     password: 邮箱授权码
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
 mybatis-plus:
   type-aliases-package: com.cen.websky.entity
-#  global-config:
-#    db-config:
-#      id-type: auto # 全局id类型为自增长
+  #  global-config:
+  #    db-config:
+  #      id-type: auto # 全局id类型为自增长
   mapper-locations: "classpath*:/mapper/**/*.xml" # Mapper.xml文件地址，当前这个是默认值。
 aliyun:
   oss:
