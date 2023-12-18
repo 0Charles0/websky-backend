@@ -4,12 +4,14 @@ import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
+import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyun.oss.model.PutObjectResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
 
@@ -54,6 +56,28 @@ public class AliOSSUtils {
                     ossClient.shutdown();
                 }
             }
+        }
+    }
+
+    public void addFolder(String folderName, Long userId) {
+        String endpoint = aliOSSProperties.getEndpoint();
+        String accessKeyId = aliOSSProperties.getAccessKeyId();
+        String accessKeySecret = aliOSSProperties.getAccessKeySecret();
+        String bucketName = aliOSSProperties.getBucketName();
+
+        // 创建OSSClient实例
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+
+        try {
+            // 在目录名称后添加一个空对象作为标识
+            String directoryName = userId + "/" + (folderName.endsWith("/") ? folderName : folderName + "/");
+            ossClient.putObject(bucketName, directoryName, new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
+            System.out.println("目录创建成功");
+        } catch (Exception e) {
+            System.err.println("目录创建失败，错误信息：" + e.getMessage());
+        } finally {
+            // 关闭OSSClient
+            ossClient.shutdown();
         }
     }
 }
