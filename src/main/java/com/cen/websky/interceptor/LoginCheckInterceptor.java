@@ -48,7 +48,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
 
         //5.解析token，如果解析失败，返回错误结果（未登录）
         try {
-            JwtUtils.parseJWT(token);
+            request.setAttribute("userInfo", JwtUtils.parseJWT(token));
         } catch (Exception e) {
             log.info("令牌解析失败!");
 
@@ -63,7 +63,6 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
 
             return false;
         }
-
         //6.放行
         return true;
     }
