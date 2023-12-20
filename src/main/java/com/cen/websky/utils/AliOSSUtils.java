@@ -20,11 +20,20 @@ import java.util.List;
 public class AliOSSUtils {
     private final AliOSSProperties aliOSSProperties;
 
+    private String endpoint;
+    private String accessKeyId;
+    private String accessKeySecret;
+    private String bucketName;
+
+    private void initialize() {
+        endpoint = aliOSSProperties.getEndpoint();
+        accessKeyId = aliOSSProperties.getAccessKeyId();
+        accessKeySecret = aliOSSProperties.getAccessKeySecret();
+        bucketName = aliOSSProperties.getBucketName();
+    }
+
     public void upload(List<MultipartFile> files, Long userId) throws Exception {
-        String endpoint = aliOSSProperties.getEndpoint();
-        String accessKeyId = aliOSSProperties.getAccessKeyId();
-        String accessKeySecret = aliOSSProperties.getAccessKeySecret();
-        String bucketName = aliOSSProperties.getBucketName();
+        initialize();
 
         for (MultipartFile file : files) {
             // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
@@ -60,10 +69,7 @@ public class AliOSSUtils {
     }
 
     public void addFolder(String folderName, Long userId) {
-        String endpoint = aliOSSProperties.getEndpoint();
-        String accessKeyId = aliOSSProperties.getAccessKeyId();
-        String accessKeySecret = aliOSSProperties.getAccessKeySecret();
-        String bucketName = aliOSSProperties.getBucketName();
+        initialize();
 
         // 创建OSSClient实例
         OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);

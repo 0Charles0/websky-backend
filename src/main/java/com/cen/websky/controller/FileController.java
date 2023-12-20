@@ -5,6 +5,7 @@ import com.cen.websky.utils.AliOSSUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,5 +38,10 @@ public class FileController {
             return Result.error("新建文件夹失败");
         }
         return Result.success("新建文件夹成功");
+    }
+
+    @GetMapping("/fileList")
+    public void fileList(String path, HttpServletRequest request) {
+
     }
 }
