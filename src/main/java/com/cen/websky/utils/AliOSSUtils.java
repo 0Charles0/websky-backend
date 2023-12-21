@@ -1,46 +1,37 @@
 package com.cen.websky.utils;
 
-import com.aliyun.oss.ClientException;
-import com.aliyun.oss.OSS;
-import com.aliyun.oss.OSSClientBuilder;
-import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.ObjectMetadata;
-import com.aliyun.oss.model.PutObjectRequest;
-import com.aliyun.oss.model.PutObjectResult;
-import lombok.RequiredArgsConstructor;
+import com.aliyun.oss.*;
+import com.aliyun.oss.model.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.List;
+import java.net.URL;
+import java.util.*;
 
 @Component
-@RequiredArgsConstructor
 public class AliOSSUtils {
-    private final AliOSSProperties aliOSSProperties;
+    private final String bucketName;
+    private final OSS ossClient;
 
-    private String endpoint;
-    private String accessKeyId;
-    private String accessKeySecret;
-    private String bucketName;
-
-    private void initialize() {
-        endpoint = aliOSSProperties.getEndpoint();
-        accessKeyId = aliOSSProperties.getAccessKeyId();
-        accessKeySecret = aliOSSProperties.getAccessKeySecret();
+    public AliOSSUtils(AliOSSProperties aliOSSProperties) {
         bucketName = aliOSSProperties.getBucketName();
+        // 创建OSSClient实例。
+        ossClient = new OSSClientBuilder().build(aliOSSProperties.getEndpoint(), aliOSSProperties.getAccessKeyId(), aliOSSProperties.getAccessKeySecret());
     }
 
+    /**
+     * 上传文件
+     *
+     * @param files
+     * @param userId
+     * @throws Exception
+     */
     public void upload(List<MultipartFile> files, Long userId) throws Exception {
-        initialize();
-
         for (MultipartFile file : files) {
             // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
             String fileName = userId + "/" + file.getOriginalFilename();
-
-            // 创建OSSClient实例。
-            OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
 
             try {
                 InputStream inputStream = file.getInputStream();
@@ -68,12 +59,13 @@ public class AliOSSUtils {
         }
     }
 
+    /**
+     * 新增文件夹
+     *
+     * @param folderName
+     * @param userId
+     */
     public void addFolder(String folderName, Long userId) {
-        initialize();
-
-        // 创建OSSClient实例
-        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-
         try {
             // 在目录名称后添加一个空对象作为标识
             String directoryName = userId + "/" + (folderName.endsWith("/") ? folderName : folderName + "/");
@@ -85,5 +77,104 @@ public class AliOSSUtils {
             // 关闭OSSClient
             ossClient.shutdown();
         }
+    }
+
+    /**
+     * 查询文件
+     *
+     * @param path
+     * @param userId
+     */
+    public List<Map<String, Object>> fileList(String path, Long userId) {
+        List<Map<String, Object>> urls = null;
+        try {
+            // 构造ListObjectsRequest请求。
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
+
+            // 设置正斜线（/）为文件夹的分隔符。
+            listObjectsRequest.setDelimiter("/");
+
+            // 列出path目录下的所有文件和文件夹。
+            listObjectsRequest.setPrefix(userId + "/" + (path.endsWith("/") ? path : path + "/"));
+
+            ObjectListing listing = ossClient.listObjects(listObjectsRequest);
+
+            urls = new ArrayList<>();
+
+            // 遍历所有文件。
+            System.out.println("Objects:");
+            // objectSummaries的列表中给出的是path目录下的文件。
+            for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
+                Map<String, Object> map = new HashMap<>();
+                String key = objectSummary.getKey();
+                map.put(key, generateURL(key));
+                urls.add(map);
+                System.out.println(objectSummary.getKey());
+            }
+
+            // 遍历所有commonPrefix。
+            System.out.println("\nCommonPrefixes:");
+            // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
+            for (String commonPrefix : listing.getCommonPrefixes()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put(commonPrefix, generateURL(commonPrefix));
+                urls.add(map);
+                System.out.println(commonPrefix);
+            }
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+        return urls;
+    }
+
+    /**
+     * 生成URL
+     *
+     * @param path
+     * @return
+     */
+    public URL generateURL(String path) {
+        URL signedUrl = null;
+        try {
+            // 指定生成的签名URL过期时间，单位为毫秒。本示例以设置过期时间为1小时为例。
+            Date expiration = new Date(new Date().getTime() + 3600 * 1000L);
+
+            // 生成签名URL。
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, path, HttpMethod.GET);
+            // 设置过期时间。
+            request.setExpiration(expiration);
+
+            // 通过HTTP GET请求生成签名URL。
+            signedUrl = ossClient.generatePresignedUrl(request);
+            // 打印签名URL。
+            System.out.println("signed url for getObject: " + signedUrl);
+        } catch (OSSException oe) {
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
+        } catch (ClientException ce) {
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
+        }
+        return signedUrl;
     }
 }

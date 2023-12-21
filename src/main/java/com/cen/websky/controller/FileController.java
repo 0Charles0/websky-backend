@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,7 +42,7 @@ public class FileController {
     }
 
     @GetMapping("/fileList")
-    public void fileList(String path, HttpServletRequest request) {
-
+    public List<Map<String, Object>> fileList(String path, HttpServletRequest request) {
+        return aliOSSUtils.fileList(path, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
     }
 }
