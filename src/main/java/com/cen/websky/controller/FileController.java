@@ -1,5 +1,6 @@
 package com.cen.websky.controller;
 
+import com.cen.websky.pojo.vo.FileVO;
 import com.cen.websky.pojo.vo.Result;
 import com.cen.websky.utils.AliOSSUtils;
 import io.jsonwebtoken.Claims;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -42,7 +43,13 @@ public class FileController {
     }
 
     @GetMapping("/fileList")
-    public List<Map<String, Object>> fileList(String path, HttpServletRequest request) {
-        return aliOSSUtils.fileList(path, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+    public Result fileList(String path, HttpServletRequest request) {
+        List<FileVO> fileList;
+        try {
+            fileList = aliOSSUtils.fileList(path, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("查询文件失败");
+        }
+        return Result.success(fileList);
     }
 }

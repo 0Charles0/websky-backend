@@ -2,6 +2,7 @@ package com.cen.websky.utils;
 
 import com.aliyun.oss.*;
 import com.aliyun.oss.model.*;
+import com.cen.websky.pojo.vo.FileVO;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -51,11 +52,11 @@ public class AliOSSUtils {
                         + "a serious internal problem while trying to communicate with OSS, "
                         + "such as not being able to access the network.");
                 System.out.println("Error Message:" + ce.getMessage());
-            } finally {
+            }/* finally {
                 if (ossClient != null) {
                     ossClient.shutdown();
                 }
-            }
+            }*/
         }
     }
 
@@ -73,10 +74,10 @@ public class AliOSSUtils {
             System.out.println("目录创建成功");
         } catch (Exception e) {
             System.err.println("目录创建失败，错误信息：" + e.getMessage());
-        } finally {
+        }/* finally {
             // 关闭OSSClient
             ossClient.shutdown();
-        }
+        }*/
     }
 
     /**
@@ -85,8 +86,8 @@ public class AliOSSUtils {
      * @param path
      * @param userId
      */
-    public List<Map<String, Object>> fileList(String path, Long userId) {
-        List<Map<String, Object>> urls = null;
+    public List<FileVO> fileList(String path, Long userId) {
+        List<FileVO> urls = null;
         try {
             // 构造ListObjectsRequest请求。
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
@@ -95,7 +96,7 @@ public class AliOSSUtils {
             listObjectsRequest.setDelimiter("/");
 
             // 列出path目录下的所有文件和文件夹。
-            listObjectsRequest.setPrefix(userId + "/" + (path.endsWith("/") ? path : path + "/"));
+            listObjectsRequest.setPrefix(userId + "/" + (!path.equals("/") ? (path.endsWith("/") ? path : path + "/") : ""));
 
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
 
@@ -105,10 +106,11 @@ public class AliOSSUtils {
             System.out.println("Objects:");
             // objectSummaries的列表中给出的是path目录下的文件。
             for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
-                Map<String, Object> map = new HashMap<>();
+                FileVO fileVO = new FileVO();
                 String key = objectSummary.getKey();
-                map.put(key, generateURL(key));
-                urls.add(map);
+                fileVO.setFileName(key);
+                fileVO.setUrl(generateURL(key));
+                urls.add(fileVO);
                 System.out.println(objectSummary.getKey());
             }
 
@@ -116,9 +118,10 @@ public class AliOSSUtils {
             System.out.println("\nCommonPrefixes:");
             // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
             for (String commonPrefix : listing.getCommonPrefixes()) {
-                Map<String, Object> map = new HashMap<>();
-                map.put(commonPrefix, generateURL(commonPrefix));
-                urls.add(map);
+                FileVO fileVO = new FileVO();
+                fileVO.setFileName(commonPrefix);
+                fileVO.setUrl(generateURL(commonPrefix));
+                urls.add(fileVO);
                 System.out.println(commonPrefix);
             }
         } catch (OSSException oe) {
@@ -133,11 +136,11 @@ public class AliOSSUtils {
                     + "a serious internal problem while trying to communicate with OSS, "
                     + "such as not being able to access the network.");
             System.out.println("Error Message:" + ce.getMessage());
-        } finally {
+        }/* finally {
             if (ossClient != null) {
                 ossClient.shutdown();
             }
-        }
+        }*/
         return urls;
     }
 
