@@ -3,13 +3,16 @@ package com.cen.websky.utils;
 import com.aliyun.oss.*;
 import com.aliyun.oss.model.*;
 import com.cen.websky.pojo.vo.FileVO;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Component
 public class AliOSSUtils {
@@ -107,9 +110,11 @@ public class AliOSSUtils {
             // objectSummaries的列表中给出的是path目录下的文件。
             for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
                 FileVO fileVO = new FileVO();
+                fileVO.setSize(objectSummary.getSize());
                 String key = objectSummary.getKey();
                 fileVO.setFileName(key);
                 fileVO.setUrl(generateURL(key));
+                fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
                 urls.add(fileVO);
                 System.out.println(objectSummary.getKey());
             }
@@ -121,10 +126,16 @@ public class AliOSSUtils {
                 FileVO fileVO = new FileVO();
                 fileVO.setFileName(commonPrefix);
                 fileVO.setUrl(generateURL(commonPrefix));
+                Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
+                fileVO.setSize(longDatePair.getFirst());
+                fileVO.setUpdateTime(longDatePair.getSecond());
                 urls.add(fileVO);
                 System.out.println(commonPrefix);
             }
-        } catch (OSSException oe) {
+        } catch (Exception e) {
+            // 输出异常信息
+            e.printStackTrace();
+        }/* catch (OSSException oe) {
             System.out.println("Caught an OSSException, which means your request made it to OSS, "
                     + "but was rejected with an error response for some reason.");
             System.out.println("Error Message:" + oe.getErrorMessage());
@@ -136,7 +147,7 @@ public class AliOSSUtils {
                     + "a serious internal problem while trying to communicate with OSS, "
                     + "such as not being able to access the network.");
             System.out.println("Error Message:" + ce.getMessage());
-        }/* finally {
+        }*//* finally {
             if (ossClient != null) {
                 ossClient.shutdown();
             }
@@ -179,5 +190,31 @@ public class AliOSSUtils {
             System.out.println("Error Message:" + ce.getMessage());
         }
         return signedUrl;
+    }
+
+    private Pair<Long, Date> calculateFolderLength(String folderKey) {
+        long size = 0L;
+        Date maxUpdateTime = new Date();
+        maxUpdateTime.setTime(0);
+        try {
+            // 构造ListObjectsRequest请求。
+            ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
+            listObjectsRequest.setPrefix(folderKey);
+
+            ObjectListing folderListing = ossClient.listObjects(listObjectsRequest);
+
+            for (OSSObjectSummary objectSummary : folderListing.getObjectSummaries()) {
+                // 累加文件大小
+                size += objectSummary.getSize();
+                // 更新时间
+                Date updateTime = ossClient.getObjectMetadata(bucketName, objectSummary.getKey()).getLastModified();
+                if (updateTime.compareTo(maxUpdateTime) > 0) {
+                    maxUpdateTime = updateTime;
+                }
+            }
+        } catch (OSSException | ClientException e) {
+            throw new RuntimeException(e);
+        }
+        return Pair.of(size, maxUpdateTime);
     }
 }
