@@ -112,7 +112,7 @@ public class AliOSSUtils {
                 FileVO fileVO = new FileVO();
                 fileVO.setSize(objectSummary.getSize());
                 String key = objectSummary.getKey();
-                fileVO.setFileName(key);
+                fileVO.setFileName(key.substring(key.indexOf('/') + 1));
                 fileVO.setUrl(generateURL(key));
                 fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
                 urls.add(fileVO);
@@ -124,7 +124,7 @@ public class AliOSSUtils {
             // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
             for (String commonPrefix : listing.getCommonPrefixes()) {
                 FileVO fileVO = new FileVO();
-                fileVO.setFileName(commonPrefix);
+                fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
                 fileVO.setUrl(generateURL(commonPrefix));
                 Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
                 fileVO.setSize(longDatePair.getFirst());
