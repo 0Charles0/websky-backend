@@ -99,39 +99,52 @@ public class AliOSSUtils {
             listObjectsRequest.setDelimiter("/");
 
             // 列出path目录下的所有文件和文件夹。
-            listObjectsRequest.setPrefix(userId + "/" + (!path.equals("/") ? (path.endsWith("/") ? path : path + "/") : ""));
+            listObjectsRequest.setPrefix(userId + "/" + (path.equals("/") ? "" : (path.endsWith("/") ? path : path + "/")));
 
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
 
             urls = new ArrayList<>();
-
+            // 初始化返回的urls列表的第一个值为上级路径
+            FileVO superiorPath = new FileVO();
+            int index = path.lastIndexOf('/', path.length() - 2);
+            if (index != -1) {
+                superiorPath.setFileName(path.substring(0, index));
+            } else {
+                superiorPath.setFileName("/");
+            }
+            urls.add(superiorPath);
             // 遍历所有文件。
             System.out.println("Objects:");
             // objectSummaries的列表中给出的是path目录下的文件。
-            for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
-                FileVO fileVO = new FileVO();
-                fileVO.setSize(objectSummary.getSize());
-                String key = objectSummary.getKey();
-                fileVO.setFileName(key.substring(key.indexOf('/') + 1));
-                fileVO.setUrl(generateURL(key));
-                fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
-                urls.add(fileVO);
-                System.out.println(objectSummary.getKey());
+            String key1 = listing.getObjectSummaries().get(0).getKey();
+            // 由于空目录会返回空目录本身，判断如果getObjectSummaries返回了空目录本身，则跳过遍历该目录，不返回空目录本身给前端
+            if (!key1.substring(key1.indexOf('/') + 1).equals(path)) {
+                for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
+                    FileVO fileVO = new FileVO();
+                    fileVO.setSize(objectSummary.getSize());
+                    String key = objectSummary.getKey();
+                    fileVO.setFileName(key.substring(key.indexOf('/') + 1));
+                    fileVO.setUrl(generateURL(key));
+                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
+                    urls.add(fileVO);
+                    System.out.println(objectSummary.getKey());
+                }
+
+                // 遍历所有commonPrefix。
+                System.out.println("\nCommonPrefixes:");
+                // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
+                for (String commonPrefix : listing.getCommonPrefixes()) {
+                    FileVO fileVO = new FileVO();
+                    fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
+                    fileVO.setUrl(generateURL(commonPrefix));
+                    Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
+                    fileVO.setSize(longDatePair.getFirst());
+                    fileVO.setUpdateTime(longDatePair.getSecond());
+                    urls.add(fileVO);
+                    System.out.println(commonPrefix);
+                }
             }
 
-            // 遍历所有commonPrefix。
-            System.out.println("\nCommonPrefixes:");
-            // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
-            for (String commonPrefix : listing.getCommonPrefixes()) {
-                FileVO fileVO = new FileVO();
-                fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
-                fileVO.setUrl(generateURL(commonPrefix));
-                Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
-                fileVO.setSize(longDatePair.getFirst());
-                fileVO.setUpdateTime(longDatePair.getSecond());
-                urls.add(fileVO);
-                System.out.println(commonPrefix);
-            }
         } catch (Exception e) {
             // 输出异常信息
             e.printStackTrace();
