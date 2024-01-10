@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,9 +32,9 @@ public class FileController {
     }
 
     @PostMapping("/addFolder")
-    public Result addFolder(String folderName, HttpServletRequest request) {
+    public Result addFolder(String folderName, String path, HttpServletRequest request) {
         try {
-            aliOSSUtils.addFolder(folderName, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+            aliOSSUtils.addFolder(folderName, path, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
         } catch (Exception e) {
             return Result.error("新建文件夹失败");
         }

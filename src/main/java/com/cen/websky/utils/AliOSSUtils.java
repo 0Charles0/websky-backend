@@ -69,10 +69,10 @@ public class AliOSSUtils {
      * @param folderName
      * @param userId
      */
-    public void addFolder(String folderName, Long userId) {
+    public void addFolder(String folderName, String path, Long userId) {
         try {
             // 在目录名称后添加一个空对象作为标识
-            String directoryName = userId + "/" + (folderName.endsWith("/") ? folderName : folderName + "/");
+            String directoryName = userId + "/" + path + (folderName.endsWith("/") ? folderName : folderName + "/");
             ossClient.putObject(bucketName, directoryName, new ByteArrayInputStream(new byte[0]), new ObjectMetadata());
             System.out.println("目录创建成功");
         } catch (Exception e) {
@@ -108,7 +108,7 @@ public class AliOSSUtils {
             FileVO superiorPath = new FileVO();
             int index = path.lastIndexOf('/', path.length() - 2);
             if (index != -1) {
-                superiorPath.setFileName(path.substring(0, index));
+                superiorPath.setFileName(path.substring(0, index + 1));
             } else {
                 superiorPath.setFileName("/");
             }
@@ -116,35 +116,35 @@ public class AliOSSUtils {
             // 遍历所有文件。
             System.out.println("Objects:");
             // objectSummaries的列表中给出的是path目录下的文件。
-            String key1 = listing.getObjectSummaries().get(0).getKey();
-            // 由于空目录会返回空目录本身，判断如果getObjectSummaries返回了空目录本身，则跳过遍历该目录，不返回空目录本身给前端
-            if (!key1.substring(key1.indexOf('/') + 1).equals(path)) {
-                for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
-                    FileVO fileVO = new FileVO();
-                    fileVO.setSize(objectSummary.getSize());
-                    String key = objectSummary.getKey();
-                    fileVO.setFileName(key.substring(key.indexOf('/') + 1));
-                    fileVO.setUrl(generateURL(key));
-                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
-                    urls.add(fileVO);
-                    System.out.println(objectSummary.getKey());
+            for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
+                // 由于查询空目录会返回空目录本身，判断如果objectSummary为空目录本身，则跳过，不返回空目录本身给前端
+                String key1 = objectSummary.getKey();
+                if (key1.substring(key1.indexOf('/') + 1).equals(path)) {
+                    continue;
                 }
 
-                // 遍历所有commonPrefix。
-                System.out.println("\nCommonPrefixes:");
-                // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
-                for (String commonPrefix : listing.getCommonPrefixes()) {
-                    FileVO fileVO = new FileVO();
-                    fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
-                    fileVO.setUrl(generateURL(commonPrefix));
-                    Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
-                    fileVO.setSize(longDatePair.getFirst());
-                    fileVO.setUpdateTime(longDatePair.getSecond());
-                    urls.add(fileVO);
-                    System.out.println(commonPrefix);
-                }
+                FileVO fileVO = new FileVO();
+                fileVO.setSize(objectSummary.getSize());
+                String key = objectSummary.getKey();
+                fileVO.setFileName(key.substring(key.indexOf('/') + 1));
+                fileVO.setUrl(generateURL(key));
+                fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
+                urls.add(fileVO);
+                System.out.println(objectSummary.getKey());
             }
-
+            // 遍历所有commonPrefix。
+            System.out.println("\nCommonPrefixes:");
+            // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
+            for (String commonPrefix : listing.getCommonPrefixes()) {
+                FileVO fileVO = new FileVO();
+                fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
+                fileVO.setUrl(generateURL(commonPrefix));
+                Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
+                fileVO.setSize(longDatePair.getFirst());
+                fileVO.setUpdateTime(longDatePair.getSecond());
+                urls.add(fileVO);
+                System.out.println(commonPrefix);
+            }
         } catch (Exception e) {
             // 输出异常信息
             e.printStackTrace();
