@@ -22,6 +22,7 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
         // 添加跨域配置
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Headers", "*");
+        response.setHeader("Access-Control-Allow-Methods", "*");
 
         //1.获取请求url
         //2.判断请求url中是否包含login，如果包含，说明是登录操作，放行

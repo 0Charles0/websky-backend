@@ -6,10 +6,7 @@ import com.cen.websky.utils.AliOSSUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -50,5 +47,16 @@ public class FileController {
             return Result.error("查询文件失败");
         }
         return Result.success(fileList);
+    }
+
+    @DeleteMapping("/delete")
+    public Result delete(@RequestBody String[] objectNames, HttpServletRequest request) {
+        try {
+            // 调用阿里云OSS工具类，将上传上来的文件存入阿里云
+            aliOSSUtils.delete(objectNames, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("删除失败");
+        }
+        return Result.success("删除成功");
     }
 }
