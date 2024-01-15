@@ -10,19 +10,20 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class AliOSSUtils {
     private final String bucketName;
     private final OSS ossClient;
+    private final CategoryProperties categoryProperties;
 
-    public AliOSSUtils(AliOSSProperties aliOSSProperties) {
+    public AliOSSUtils(AliOSSProperties aliOSSProperties, CategoryProperties categoryProperties) {
         bucketName = aliOSSProperties.getBucketName();
         // 创建OSSClient实例。
         ossClient = new OSSClientBuilder().build(aliOSSProperties.getEndpoint(), aliOSSProperties.getAccessKeyId(), aliOSSProperties.getAccessKeySecret());
+
+        this.categoryProperties = categoryProperties;
     }
 
     /**
@@ -90,7 +91,7 @@ public class AliOSSUtils {
      * @param userId
      */
     public List<FileVO> fileList(String path, Long userId) {
-        List<FileVO> urls = null;
+        List<FileVO> files = null;
         try {
             // 构造ListObjectsRequest请求。
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
@@ -103,8 +104,8 @@ public class AliOSSUtils {
 
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
 
-            urls = new ArrayList<>();
-            // 初始化返回的urls列表的第一个值为上级路径
+            files = new ArrayList<>();
+            // 初始化返回的files列表的第一个值为上级路径
             FileVO superiorPath = new FileVO();
             int index = path.lastIndexOf('/', path.length() - 2);
             if (index != -1) {
@@ -112,7 +113,7 @@ public class AliOSSUtils {
             } else {
                 superiorPath.setFileName("/");
             }
-            urls.add(superiorPath);
+            files.add(superiorPath);
             // 遍历所有文件。
             System.out.println("Objects:");
             // objectSummaries的列表中给出的是path目录下的文件。
@@ -129,7 +130,7 @@ public class AliOSSUtils {
                 fileVO.setFileName(key.substring(key.indexOf('/') + 1));
                 fileVO.setUrl(generateURL(key));
                 fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
-                urls.add(fileVO);
+                files.add(fileVO);
                 System.out.println(objectSummary.getKey());
             }
             // 遍历所有commonPrefix。
@@ -142,30 +143,18 @@ public class AliOSSUtils {
                 Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
                 fileVO.setSize(longDatePair.getFirst());
                 fileVO.setUpdateTime(longDatePair.getSecond());
-                urls.add(fileVO);
+                files.add(fileVO);
                 System.out.println(commonPrefix);
             }
         } catch (Exception e) {
             // 输出异常信息
             e.printStackTrace();
-        }/* catch (OSSException oe) {
-            System.out.println("Caught an OSSException, which means your request made it to OSS, "
-                    + "but was rejected with an error response for some reason.");
-            System.out.println("Error Message:" + oe.getErrorMessage());
-            System.out.println("Error Code:" + oe.getErrorCode());
-            System.out.println("Request ID:" + oe.getRequestId());
-            System.out.println("Host ID:" + oe.getHostId());
-        } catch (ClientException ce) {
-            System.out.println("Caught an ClientException, which means the client encountered "
-                    + "a serious internal problem while trying to communicate with OSS, "
-                    + "such as not being able to access the network.");
-            System.out.println("Error Message:" + ce.getMessage());
-        }*//* finally {
+        }/*finally {
             if (ossClient != null) {
                 ossClient.shutdown();
             }
         }*/
-        return urls;
+        return files;
     }
 
     /**
@@ -205,6 +194,12 @@ public class AliOSSUtils {
         return signedUrl;
     }
 
+    /**
+     * 文件大小、时间
+     *
+     * @param folderKey
+     * @return
+     */
     private Pair<Long, Date> calculateFolderLength(String folderKey) {
         long size = 0L;
         Date maxUpdateTime = new Date();
@@ -231,7 +226,13 @@ public class AliOSSUtils {
         return Pair.of(size, maxUpdateTime);
     }
 
-    public void delete(String[] objectNames, Long userId) throws Exception {
+    /**
+     * 批量删除
+     *
+     * @param objectNames
+     * @param userId
+     */
+    public void delete(String[] objectNames, Long userId) {
         try {
             for (String objectName : objectNames) {
                 ObjectListing objectListing = ossClient.listObjects(bucketName, userId + "/" + objectName);
@@ -257,5 +258,59 @@ public class AliOSSUtils {
                 ossClient.shutdown();
             }
         }*/
+    }
+
+    public List<FileVO> classify(String category, Long userId) {
+        List<FileVO> files = null;
+        try {
+            files = new ArrayList<>();
+            ObjectListing objectListing = ossClient.listObjects(bucketName, userId + "/");
+            for (OSSObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                String objectName = objectSummary.getKey();
+                String picture = categoryProperties.getPicture();
+                String document = categoryProperties.getDocument();
+                String video = categoryProperties.getVideo();
+                String audio = categoryProperties.getAudio();
+                String other = picture + "," + document + "," + video + "," + audio;
+                Set<String> extensions = null;
+                boolean isOther = false;
+                switch (category) {
+                    case "图片":
+                        extensions = new HashSet<>(Set.of(picture.split(",\\s*")));
+                        break;
+                    case "文档":
+                        extensions = new HashSet<>(Set.of(document.split(",\\s*")));
+                        break;
+                    case "视频":
+                        extensions = new HashSet<>(Set.of(video.split(",\\s*")));
+                        break;
+                    case "音频":
+                        extensions = new HashSet<>(Set.of(audio.split(",\\s*")));
+                        break;
+                    default:
+                        extensions = new HashSet<>(Set.of(other.split(",\\s*")));
+                        isOther = true;
+                }
+                // 判断文件名是否以集合中任意一个扩展名结尾,其它情况则相反
+                if ((!isOther && extensions.stream().anyMatch(objectName::endsWith)) ||
+                        (isOther && extensions.stream().noneMatch(objectName::endsWith))) {
+                    FileVO fileVO = new FileVO();
+                    fileVO.setSize(objectSummary.getSize());
+                    fileVO.setFileName(objectName.substring(objectName.indexOf('/') + 1));
+                    fileVO.setUrl(generateURL(objectName));
+                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, objectName).getLastModified());
+                    files.add(fileVO);
+                    System.out.println(objectName + " 的后缀在集合中");
+                }
+            }
+        } catch (Exception e) {
+            // 输出异常信息
+            e.printStackTrace();
+        }/*finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }*/
+        return files;
     }
 }
