@@ -3,27 +3,40 @@ package com.cen.websky.utils;
 import com.aliyun.oss.*;
 import com.aliyun.oss.model.*;
 import com.cen.websky.pojo.vo.FileVO;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Component
 public class AliOSSUtils {
     private final String bucketName;
     private final OSS ossClient;
-    private final CategoryProperties categoryProperties;
+    private final String picture;
+    private final String document;
+    private final String video;
+    private final String audio;
+    private final String other;
 
     public AliOSSUtils(AliOSSProperties aliOSSProperties, CategoryProperties categoryProperties) {
         bucketName = aliOSSProperties.getBucketName();
         // 创建OSSClient实例。
         ossClient = new OSSClientBuilder().build(aliOSSProperties.getEndpoint(), aliOSSProperties.getAccessKeyId(), aliOSSProperties.getAccessKeySecret());
 
-        this.categoryProperties = categoryProperties;
+        picture = categoryProperties.getPicture();
+        document = categoryProperties.getDocument();
+        video = categoryProperties.getVideo();
+        audio = categoryProperties.getAudio();
+        other = picture + "," + document + "," + video + "," + audio;
     }
 
     /**
@@ -130,6 +143,19 @@ public class AliOSSUtils {
                 fileVO.setFileName(key.substring(key.indexOf('/') + 1));
                 fileVO.setUrl(generateURL(key));
                 fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
+                Map<String, Set<String>> extensionsMap = new HashMap<>();
+                extensionsMap.put("图片", new HashSet<>(Set.of(picture.split(",\\s*"))));
+                extensionsMap.put("文档", new HashSet<>(Set.of(document.split(",\\s*"))));
+                extensionsMap.put("视频", new HashSet<>(Set.of(video.split(",\\s*"))));
+                extensionsMap.put("音频", new HashSet<>(Set.of(audio.split(",\\s*"))));
+                for (Map.Entry<String, Set<String>> entry : extensionsMap.entrySet()) {
+                    if (entry.getValue().stream().anyMatch(key1::endsWith)) {
+                        fileVO.setCategory(entry.getKey());
+                    }
+                }
+                if (fileVO.getCategory() == null) {
+                    fileVO.setCategory("其它");
+                }
                 files.add(fileVO);
                 System.out.println(objectSummary.getKey());
             }
@@ -166,7 +192,7 @@ public class AliOSSUtils {
     public URL generateURL(String path) {
         URL signedUrl = null;
         try {
-            // 指定生成的签名URL过期时间，单位为毫秒。本示例以设置过期时间为1小时为例。
+            // 指定生成的签名URL过期时间，单位为毫秒，1小时。
             Date expiration = new Date(new Date().getTime() + 3600 * 1000L);
 
             // 生成签名URL。
@@ -260,6 +286,13 @@ public class AliOSSUtils {
         }*/
     }
 
+    /**
+     * 分类查询
+     *
+     * @param category
+     * @param userId
+     * @return
+     */
     public List<FileVO> classify(String category, Long userId) {
         List<FileVO> files = null;
         try {
@@ -267,11 +300,6 @@ public class AliOSSUtils {
             ObjectListing objectListing = ossClient.listObjects(bucketName, userId + "/");
             for (OSSObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                 String objectName = objectSummary.getKey();
-                String picture = categoryProperties.getPicture();
-                String document = categoryProperties.getDocument();
-                String video = categoryProperties.getVideo();
-                String audio = categoryProperties.getAudio();
-                String other = picture + "," + document + "," + video + "," + audio;
                 Set<String> extensions = null;
                 boolean isOther = false;
                 switch (category) {
@@ -291,14 +319,15 @@ public class AliOSSUtils {
                         extensions = new HashSet<>(Set.of(other.split(",\\s*")));
                         isOther = true;
                 }
-                // 判断文件名是否以集合中任意一个扩展名结尾,其它情况则相反
+                // 判断文件名是否以集合中任意一个扩展名结尾,其它情况则相反,且排除文件夹
                 if ((!isOther && extensions.stream().anyMatch(objectName::endsWith)) ||
-                        (isOther && extensions.stream().noneMatch(objectName::endsWith))) {
+                        (isOther && extensions.stream().noneMatch(objectName::endsWith) && !objectName.endsWith("/"))) {
                     FileVO fileVO = new FileVO();
                     fileVO.setSize(objectSummary.getSize());
                     fileVO.setFileName(objectName.substring(objectName.indexOf('/') + 1));
                     fileVO.setUrl(generateURL(objectName));
                     fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, objectName).getLastModified());
+                    fileVO.setCategory(category);
                     files.add(fileVO);
                     System.out.println(objectName + " 的后缀在集合中");
                 }
@@ -312,5 +341,110 @@ public class AliOSSUtils {
             }
         }*/
         return files;
+    }
+
+    /**
+     * 批量下载 oss 文件,并打成 zip 包返回到 response 中
+     *
+     * @param fileNames
+     * @param response
+     */
+    public void downLoad(String[] fileNames, HttpServletResponse response, Long userId) {
+        String zipFileName = "AllDownloaded";
+        response.setCharacterEncoding("utf-8");
+        response.setContentType("multipart/form-data");
+        response.setHeader("Content-Disposition", "attachment;fileName=" + zipFileName + ".zip");
+        BufferedInputStream bis = null;
+        try {
+            ZipOutputStream zos = new ZipOutputStream(response.getOutputStream());
+            for (String fileName : fileNames) {
+                fileName = userId + "/" + fileName;
+                if (fileName.endsWith("/")) {
+                    // 如果是文件夹，则递归处理文件夹中的文件
+                    addFilesToZip(fileName, fileName.substring(0, fileName.lastIndexOf('/', fileName.length() - 2) + 1), zos);
+                    continue;
+                }
+                // 生成签名URL
+                URL signedUrl = generateURL(fileName);
+                // 使用签名URL发送请求。
+                OSSObject ossObject = ossClient.getObject(signedUrl, new HashMap<>());
+
+                if (ossObject != null) {
+                    InputStream inputStream = ossObject.getObjectContent();
+                    byte[] buffs = new byte[1024 * 10];
+
+                    String zipFile = fileName.substring(fileName.lastIndexOf("/") + 1);
+                    ZipEntry zipEntry = new ZipEntry(zipFile);
+                    zos.putNextEntry(zipEntry);
+                    bis = new BufferedInputStream(inputStream, 1024 * 10);
+
+                    int read;
+                    while ((read = bis.read(buffs, 0, 1024 * 10)) != -1) {
+                        zos.write(buffs, 0, read);
+                    }
+                    ossObject.close();
+                }
+            }
+            zos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            //关闭流
+            try {
+                if (null != bis) {
+                    bis.close();
+                }
+                response.getOutputStream().flush();
+                response.getOutputStream().close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 递归添加文件夹中的文件到压缩包中
+     *
+     * @param folderName
+     * @param parentFolder
+     * @param zos
+     */
+    private void addFilesToZip(String folderName, String parentFolder, ZipOutputStream zos) {
+        // 构造ListObjectsRequest请求。
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
+        // 设置正斜线（/）为文件夹的分隔符。
+        listObjectsRequest.setDelimiter("/");
+        // 列出folderName目录下的所有文件和文件夹。
+        listObjectsRequest.setPrefix(folderName);
+        ObjectListing objectListing = ossClient.listObjects(listObjectsRequest);
+
+        List<OSSObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+
+        for (OSSObjectSummary objectSummary : objectSummaries) {
+            // 由于查询空目录会返回空目录本身，判断如果objectSummary为空目录本身，则跳过
+            if (objectSummary.getKey().equals(folderName)) {
+                continue;
+            }
+
+            String fileName = objectSummary.getKey();
+            String entryName = fileName.substring(parentFolder.length());
+
+            // 如果是文件，则将文件添加到压缩包中
+            try (InputStream inputStream = ossClient.getObject(bucketName, fileName).getObjectContent()) {
+                byte[] buffer = new byte[1024 * 10];
+                zos.putNextEntry(new ZipEntry(entryName));
+                int read;
+                while ((read = inputStream.read(buffer, 0, 1024 * 10)) != -1) {
+                    zos.write(buffer, 0, read);
+                }
+                zos.closeEntry();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        // 递归处理文件夹中的文件
+        for (String commonPrefix : objectListing.getCommonPrefixes()) {
+            addFilesToZip(commonPrefix, parentFolder, zos);
+        }
     }
 }

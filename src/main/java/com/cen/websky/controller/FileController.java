@@ -5,6 +5,7 @@ import com.cen.websky.pojo.vo.Result;
 import com.cen.websky.utils.AliOSSUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,6 +50,17 @@ public class FileController {
         return Result.success(fileList);
     }
 
+    @GetMapping("/category")
+    public Result classify(String category, HttpServletRequest request) {
+        List<FileVO> fileList;
+        try {
+            fileList = aliOSSUtils.classify(category, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("查询该类别文件失败");
+        }
+        return Result.success(fileList);
+    }
+
     @DeleteMapping("/delete")
     public Result delete(@RequestBody String[] objectNames, HttpServletRequest request) {
         try {
@@ -58,5 +70,10 @@ public class FileController {
             return Result.error("删除失败");
         }
         return Result.success("删除成功");
+    }
+
+    @GetMapping("/download")
+    public void download(String[] fileNames, HttpServletResponse response, HttpServletRequest request) {
+        aliOSSUtils.downLoad(fileNames, response, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
     }
 }

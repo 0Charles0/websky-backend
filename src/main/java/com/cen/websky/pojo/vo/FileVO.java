@@ -13,4 +13,5 @@ public class FileVO {
     private URL url;
     private Long size;
     private Date updateTime;
+    private String category;
 }
