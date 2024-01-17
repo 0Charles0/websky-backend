@@ -76,4 +76,15 @@ public class FileController {
     public void download(String[] fileNames, HttpServletResponse response, HttpServletRequest request) {
         aliOSSUtils.downLoad(fileNames, response, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
     }
+
+    @GetMapping("/userSearch")
+    public Result userSearch(String userSearchName, HttpServletRequest request) {
+        List<FileVO> fileList;
+        try {
+            fileList = aliOSSUtils.fileList("/", userSearchName, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("搜索文件失败");
+        }
+        return Result.success(fileList);
+    }
 }

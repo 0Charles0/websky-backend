@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -98,26 +100,32 @@ public class AliOSSUtils {
     }
 
     /**
-     * 查询文件
+     * 文件查询
      *
      * @param path
+     * @param fuzzyName
      * @param userId
+     * @return
      */
-    public List<FileVO> fileList(String path, Long userId) {
+    public List<FileVO> fileList(String path, String fuzzyName, Long userId) {
         List<FileVO> files = null;
         try {
+            files = new ArrayList<>();
             // 构造ListObjectsRequest请求。
             ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
-
-            // 设置正斜线（/）为文件夹的分隔符。
-            listObjectsRequest.setDelimiter("/");
-
+            // 模糊词
+            Pattern p = null;
+            Matcher m = null;
+            if (fuzzyName != null) {
+                String pattern = ".*" + fuzzyName + ".*";
+                p = Pattern.compile(pattern);
+            } else {
+                // 设置正斜线（/）为文件夹的分隔符。
+                listObjectsRequest.setDelimiter("/");
+            }
             // 列出path目录下的所有文件和文件夹。
             listObjectsRequest.setPrefix(userId + "/" + (path.equals("/") ? "" : (path.endsWith("/") ? path : path + "/")));
-
             ObjectListing listing = ossClient.listObjects(listObjectsRequest);
-
-            files = new ArrayList<>();
             // 初始化返回的files列表的第一个值为上级路径
             FileVO superiorPath = new FileVO();
             int index = path.lastIndexOf('/', path.length() - 2);
@@ -132,45 +140,43 @@ public class AliOSSUtils {
             // objectSummaries的列表中给出的是path目录下的文件。
             for (OSSObjectSummary objectSummary : listing.getObjectSummaries()) {
                 // 由于查询空目录会返回空目录本身，判断如果objectSummary为空目录本身，则跳过，不返回空目录本身给前端
-                String key1 = objectSummary.getKey();
-                if (key1.substring(key1.indexOf('/') + 1).equals(path)) {
+                String key = objectSummary.getKey();
+                if (key.substring(key.indexOf('/') + 1).equals(path)) {
                     continue;
                 }
-
-                FileVO fileVO = new FileVO();
-                fileVO.setSize(objectSummary.getSize());
-                String key = objectSummary.getKey();
-                fileVO.setFileName(key.substring(key.indexOf('/') + 1));
-                fileVO.setUrl(generateURL(key));
-                fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
-                Map<String, Set<String>> extensionsMap = new HashMap<>();
-                extensionsMap.put("图片", new HashSet<>(Set.of(picture.split(",\\s*"))));
-                extensionsMap.put("文档", new HashSet<>(Set.of(document.split(",\\s*"))));
-                extensionsMap.put("视频", new HashSet<>(Set.of(video.split(",\\s*"))));
-                extensionsMap.put("音频", new HashSet<>(Set.of(audio.split(",\\s*"))));
-                for (Map.Entry<String, Set<String>> entry : extensionsMap.entrySet()) {
-                    if (entry.getValue().stream().anyMatch(key1::endsWith)) {
-                        fileVO.setCategory(entry.getKey());
-                    }
+                // 模糊匹配
+                if (fuzzyName != null) {
+                    String[] keySplit = key.split("/");
+                    m = p.matcher(keySplit[keySplit.length - 1]);
                 }
-                if (fileVO.getCategory() == null) {
-                    fileVO.setCategory("其它");
+                if (fuzzyName == null || m.matches()) {
+                    FileVO fileVO = new FileVO();
+                    fileVO.setSize(objectSummary.getSize());
+                    fileVO.setFileName(key.substring(key.indexOf('/') + 1));
+                    fileVO.setUrl(generateURL(key));
+                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
+                    fileVO.setCategory(determineCategory(key));
+                    files.add(fileVO);
                 }
-                files.add(fileVO);
-                System.out.println(objectSummary.getKey());
             }
             // 遍历所有commonPrefix。
             System.out.println("\nCommonPrefixes:");
             // commonPrefixs列表中显示的是path目录下的所有子文件夹。由于path/movie/001.avi和path/movie/007.avi属于path文件夹下的movie目录，因此这两个文件未在列表中。
             for (String commonPrefix : listing.getCommonPrefixes()) {
-                FileVO fileVO = new FileVO();
-                fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
-                fileVO.setUrl(generateURL(commonPrefix));
-                Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
-                fileVO.setSize(longDatePair.getFirst());
-                fileVO.setUpdateTime(longDatePair.getSecond());
-                files.add(fileVO);
-                System.out.println(commonPrefix);
+                // 模糊匹配
+                if (fuzzyName != null) {
+                    String[] keySplit = commonPrefix.split("/");
+                    m = p.matcher(keySplit[keySplit.length - 1]);
+                }
+                if (fuzzyName == null || m.matches()) {
+                    FileVO fileVO = new FileVO();
+                    fileVO.setFileName(commonPrefix.substring(commonPrefix.indexOf('/') + 1));
+                    fileVO.setUrl(generateURL(commonPrefix));
+                    Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
+                    fileVO.setSize(longDatePair.getFirst());
+                    fileVO.setUpdateTime(longDatePair.getSecond());
+                    files.add(fileVO);
+                }
             }
         } catch (Exception e) {
             // 输出异常信息
@@ -181,6 +187,26 @@ public class AliOSSUtils {
             }
         }*/
         return files;
+    }
+
+    /**
+     * 重载文件查询
+     *
+     * @param path
+     * @param userId
+     */
+    public List<FileVO> fileList(String path, Long userId) {
+        return fileList(path, null, userId);
+    }
+
+    /**
+     * 重载文件查询
+     *
+     * @param userId
+     * @return
+     */
+    public List<FileVO> fileList(Long userId) {
+        return fileList("/", null, userId);
     }
 
     /**
@@ -446,5 +472,55 @@ public class AliOSSUtils {
         for (String commonPrefix : objectListing.getCommonPrefixes()) {
             addFilesToZip(commonPrefix, parentFolder, zos);
         }
+    }
+
+    /*public List<FileVO> fuzzyQuery(String fuzzyName, Long userId) {
+        List<FileVO> files = null;
+        try {
+            files = new ArrayList<>();
+            String pattern = ".*" + fuzzyName + ".*";
+            Pattern p = Pattern.compile(pattern);
+            ObjectListing objectListing = ossClient.listObjects(bucketName, userId + "/");
+            for (OSSObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                String key = objectSummary.getKey();
+                String[] keySplit = key.split("/");
+                String fileName = keySplit[keySplit.length - 1];
+                Matcher m = p.matcher(fileName);
+                if (m.matches()) {
+                    FileVO fileVO = new FileVO();
+                    fileVO.setSize(objectSummary.getSize());
+                    fileVO.setFileName(fileName);
+                    fileVO.setUrl(generateURL(key));
+                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
+                    fileVO.setCategory(determineCategory(fileName));
+                    files.add(fileVO);
+                    System.out.println("Found a match!");
+                } else {
+                    System.out.println("No match found.");
+                }
+            }
+        } catch (Exception e) {
+            // 输出异常信息
+            e.printStackTrace();
+        }*//*finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }*//*
+        return files;
+    }*/
+
+    public String determineCategory(String fileName) {
+        Map<String, Set<String>> extensionsMap = new HashMap<>();
+        extensionsMap.put("图片", new HashSet<>(Set.of(picture.split(",\\s*"))));
+        extensionsMap.put("文档", new HashSet<>(Set.of(document.split(",\\s*"))));
+        extensionsMap.put("视频", new HashSet<>(Set.of(video.split(",\\s*"))));
+        extensionsMap.put("音频", new HashSet<>(Set.of(audio.split(",\\s*"))));
+        for (Map.Entry<String, Set<String>> entry : extensionsMap.entrySet()) {
+            if (entry.getValue().stream().anyMatch(fileName::endsWith)) {
+                return entry.getKey();
+            }
+        }
+        return "其它";
     }
 }
