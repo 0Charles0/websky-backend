@@ -4,6 +4,8 @@ import com.cen.websky.pojo.po.Captcha;
 import com.cen.websky.pojo.po.User;
 import com.cen.websky.pojo.vo.Result;
 import com.cen.websky.service.UserService;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,5 +29,26 @@ public class UserController {
     @PatchMapping("/register/verify")
     public Result registerVerification(@RequestBody Captcha captcha) {
         return userService.registerVerification(captcha);
+    }
+
+    @GetMapping("/userInfo")
+    public Result queryUser(HttpServletRequest request) {
+        User userInfo;
+        try {
+            userInfo = userService.getById(((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("用户查询失败");
+        }
+        return Result.success(userInfo);
+    }
+
+    @PatchMapping("/updatePassword")
+    public Result updatePassword(String password, HttpServletRequest request) {
+        try {
+            userService.updatePassword(password, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("密码修改失败");
+        }
+        return Result.success("密码修改成功");
     }
 }

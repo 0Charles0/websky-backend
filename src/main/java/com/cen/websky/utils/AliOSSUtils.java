@@ -48,17 +48,26 @@ public class AliOSSUtils {
      * @param userId
      * @throws Exception
      */
-    public void upload(List<MultipartFile> files, Long userId) throws Exception {
+    public void upload(boolean isImage, List<MultipartFile> files, Long userId) throws Exception {
         for (MultipartFile file : files) {
             // 填写Object完整路径，完整路径中不能包含Bucket名称，例如exampledir/exampleobject.txt。
             String fileName = userId + "/" + file.getOriginalFilename();
-
+            if (isImage) {
+                fileName = "image" + "/" + fileName;
+            }
             try {
                 InputStream inputStream = file.getInputStream();
                 // 创建PutObjectRequest对象。
                 PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, inputStream);
                 // 创建PutObject请求。
                 PutObjectResult result = ossClient.putObject(putObjectRequest);
+                if (isImage) {
+                    ossClient.setObjectAcl(bucketName, fileName, CannedAccessControlList.PublicRead);
+                    // 通过拷贝重命名头像名
+                    ossClient.copyObject(bucketName, fileName, bucketName, fileName.substring(0, fileName.lastIndexOf("/") + 1) + "websky头像.jpg");
+                    // 删除旧文件
+                    ossClient.deleteObject(bucketName, fileName);
+                }
             } catch (OSSException oe) {
                 System.out.println("Caught an OSSException, which means your request made it to OSS, "
                         + "but was rejected with an error response for some reason.");
@@ -77,6 +86,10 @@ public class AliOSSUtils {
                 }
             }*/
         }
+    }
+
+    public void upload(List<MultipartFile> files, Long userId) throws Exception {
+        upload(false, files, userId);
     }
 
     /**

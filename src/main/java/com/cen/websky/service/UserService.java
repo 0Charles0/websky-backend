@@ -5,6 +5,8 @@ import com.cen.websky.pojo.po.Captcha;
 import com.cen.websky.pojo.po.User;
 import com.cen.websky.pojo.vo.Result;
 
+import java.time.LocalDateTime;
+
 public interface UserService extends IService<User> {
     /**
      * 检测空邮箱和密码
@@ -52,4 +54,19 @@ public interface UserService extends IService<User> {
      * @return
      */
     Result registerVerification(Captcha captcha);
+
+    /**
+     * 修改密码
+     * @param password
+     * @param id
+     */
+    void updatePassword(String password, Long id);
+
+    /**
+     * 验证 token 创建时间是否小于登出时间
+     * @param id
+     * @param createTime
+     * @return
+     */
+    boolean verifyTokenTime(Long id, LocalDateTime createTime);
 }

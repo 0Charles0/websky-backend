@@ -29,6 +29,17 @@ public class FileController {
         return Result.success("上传成功");
     }
 
+    @PostMapping("/uploadImage")
+    public Result uploadImage(List<MultipartFile> files, HttpServletRequest request) {
+        try {
+            // 调用阿里云OSS工具类，将上传上来的文件存入阿里云
+            aliOSSUtils.upload(true, files, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("上传失败");
+        }
+        return Result.success("上传成功");
+    }
+
     @PostMapping("/addFolder")
     public Result addFolder(String folderName, String path, HttpServletRequest request) {
         try {

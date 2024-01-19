@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +61,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     claims.put("email", loginUser.getEmail());
                     claims.put("image", loginUser.getImage());
                     claims.put("status", loginUser.getStatus());
+                    claims.put("createTime", LocalDateTime.now().toString());
                     // 使用JWT工具类，生成身份令牌
                     String token = JwtUtils.generateJwt(claims);
                     return Result.success(token);
@@ -103,6 +105,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return Result.success("注册成功");
         }
         return Result.error(401, "注册验证失败");
+    }
+
+    @Override
+    public void updatePassword(String password, Long id) {
+        User user = getById(id);
+        user.setPassword(password);
+        user.setLogoutTime(LocalDateTime.now());
+        updateById(user);
+    }
+
+    @Override
+    public boolean verifyTokenTime(Long id, LocalDateTime createTime) {
+        return !createTime.isBefore(getById(id).getLogoutTime());
     }
 
     @Override

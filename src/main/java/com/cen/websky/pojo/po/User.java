@@ -3,6 +3,8 @@ package com.cen.websky.pojo.po;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @TableName("user")
 public class User {
@@ -12,4 +14,5 @@ public class User {
     private String email;
     private String image;
     private Boolean status;
+    private LocalDateTime logoutTime;
 }
