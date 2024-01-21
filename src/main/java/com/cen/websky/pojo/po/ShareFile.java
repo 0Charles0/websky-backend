@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("file")
-public class File {
+@TableName("share_file")
+public class ShareFile {
     private Long id;
-    private String fileName;
-    private String filePath;
+    private String title;
+    private String path;
     private Long userId;
 }
