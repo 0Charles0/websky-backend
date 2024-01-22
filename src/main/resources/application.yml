@@ -18,7 +18,7 @@ mybatis-plus:
   type-aliases-package: com.cen.websky.entity
   #  global-config:
   #    db-config:
-  #      id-type: auto # 全局id类型为自增长
+  #      id-type: AUTO # 全局id类型为自增长
   mapper-locations: "classpath*:/mapper/**/*.xml" # Mapper.xml文件地址，当前这个是默认值。
 aliyun:
   oss:

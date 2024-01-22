@@ -2,8 +2,9 @@ package com.cen.websky.utils;
 
 import com.aliyun.oss.*;
 import com.aliyun.oss.model.*;
-import com.cen.websky.pojo.po.ShareFile;
 import com.cen.websky.pojo.vo.FileVO;
+import com.cen.websky.pojo.dto.ShareFileDTO;
+import com.cen.websky.pojo.po.ShareFile;
 import com.cen.websky.service.ShareFileService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.util.Pair;
@@ -16,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -173,7 +176,7 @@ public class AliOSSUtils {
                     fileVO.setSize(objectSummary.getSize());
                     fileVO.setFileName(key.substring(key.indexOf('/') + 1));
                     fileVO.setUrl(generateURL(key));
-                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, key).getLastModified());
+                    fileVO.setUpdateTime(LocalDateTime.ofInstant(ossClient.getObjectMetadata(bucketName, key).getLastModified().toInstant(), ZoneId.systemDefault()));
                     fileVO.setCategory(determineCategory(key));
                     files.add(fileVO);
                 }
@@ -193,7 +196,7 @@ public class AliOSSUtils {
                     fileVO.setUrl(generateURL(commonPrefix));
                     Pair<Long, Date> longDatePair = calculateFolderLength(commonPrefix);
                     fileVO.setSize(longDatePair.getFirst());
-                    fileVO.setUpdateTime(longDatePair.getSecond());
+                    fileVO.setUpdateTime(LocalDateTime.ofInstant(longDatePair.getSecond().toInstant(), ZoneId.systemDefault()));
                     files.add(fileVO);
                 }
             }
@@ -380,7 +383,7 @@ public class AliOSSUtils {
                     fileVO.setSize(objectSummary.getSize());
                     fileVO.setFileName(objectName.substring(objectName.indexOf('/') + 1));
                     fileVO.setUrl(generateURL(objectName));
-                    fileVO.setUpdateTime(ossClient.getObjectMetadata(bucketName, objectName).getLastModified());
+                    fileVO.setUpdateTime(LocalDateTime.ofInstant(ossClient.getObjectMetadata(bucketName, objectName).getLastModified().toInstant(), ZoneId.systemDefault()));
                     fileVO.setCategory(category);
                     files.add(fileVO);
                     System.out.println(objectName + " 的后缀在集合中");
@@ -516,11 +519,29 @@ public class AliOSSUtils {
         return "其它";
     }
 
-    public URL share(String title, String[] files, Long userId) throws MalformedURLException {
-        String destinationKey = "share/" + UUID.randomUUID() + "/";
+    public URL share(ShareFileDTO shareFileDTO, Long userId) throws MalformedURLException {
+        String title = shareFileDTO.getTitle();
+        String[] files = shareFileDTO.getFiles();
+        String folder = "share/" + UUID.randomUUID() + "/";
         try {
+            List<String> fileDTOs = new ArrayList<>();
             for (String file : files) {
-                String sourceKey = userId + "/" + file;
+                if (file.endsWith("/")) {
+                    // 构造ListObjectsRequest请求。
+                    ListObjectsRequest listObjectsRequest = new ListObjectsRequest(bucketName);
+                    listObjectsRequest.setPrefix(userId + "/" + file);
+                    ObjectListing folderListing = ossClient.listObjects(listObjectsRequest);
+                    for (OSSObjectSummary objectSummary : folderListing.getObjectSummaries()) {
+                        String key = objectSummary.getKey();
+                        fileDTOs.add(key.substring(key.indexOf('/') + 1));
+                    }
+                } else {
+                    fileDTOs.add(file);
+                }
+            }
+            for (String fileDTO : fileDTOs) {
+                String destinationKey = folder + fileDTO;
+                String sourceKey = userId + "/" + fileDTO;
                 ObjectMetadata objectMetadata = ossClient.getObjectMetadata(bucketName, sourceKey);
                 // 获取被拷贝文件的大小。
                 long contentLength = objectMetadata.getContentLength();
@@ -554,20 +575,20 @@ public class AliOSSUtils {
                     uploadPartCopyRequest.setPartSize(size);
                     uploadPartCopyRequest.setBeginIndex(skipBytes);
                     uploadPartCopyRequest.setPartNumber(i + 1);
-                    /*//Map headers = new HashMap();
-                    // 指定拷贝的源地址。
-                    // headers.put(OSSHeaders.COPY_OBJECT_SOURCE, "/examplebucket/desexampleobject.txt");
-                    // 指定源Object的拷贝范围。例如设置bytes=0~1023，表示拷贝1~1024字节的内容。
-                    // headers.put(OSSHeaders.COPY_SOURCE_RANGE, "bytes=0~1023");
-                    // 如果源Object的ETag值和您提供的ETag相等，则执行拷贝操作，并返回200 OK。
-                    // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_MATCH, "5B3C1A2E053D763E1B002CC607C5****");
-                    // 如果源Object的ETag值和您提供的ETag不相等，则执行拷贝操作，并返回200 OK。
-                    // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_NONE_MATCH, "5B3C1A2E053D763E1B002CC607C5****");
-                    // 如果指定的时间等于或者晚于文件实际修改时间，则正常拷贝文件，并返回200 OK。
-                    // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_UNMODIFIED_SINCE, "2021-12-09T07:01:56.000Z");
-                    // 如果源Object在用户指定的时间以后被修改过，则执行拷贝操作。
-                    // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_MODIFIED_SINCE, "2021-12-09T07:01:56.000Z");
-                    // uploadPartCopyRequest.setHeaders(headers);*/
+                /*//Map headers = new HashMap();
+                // 指定拷贝的源地址。
+                // headers.put(OSSHeaders.COPY_OBJECT_SOURCE, "/examplebucket/desexampleobject.txt");
+                // 指定源Object的拷贝范围。例如设置bytes=0~1023，表示拷贝1~1024字节的内容。
+                // headers.put(OSSHeaders.COPY_SOURCE_RANGE, "bytes=0~1023");
+                // 如果源Object的ETag值和您提供的ETag相等，则执行拷贝操作，并返回200 OK。
+                // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_MATCH, "5B3C1A2E053D763E1B002CC607C5****");
+                // 如果源Object的ETag值和您提供的ETag不相等，则执行拷贝操作，并返回200 OK。
+                // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_NONE_MATCH, "5B3C1A2E053D763E1B002CC607C5****");
+                // 如果指定的时间等于或者晚于文件实际修改时间，则正常拷贝文件，并返回200 OK。
+                // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_UNMODIFIED_SINCE, "2021-12-09T07:01:56.000Z");
+                // 如果源Object在用户指定的时间以后被修改过，则执行拷贝操作。
+                // headers.put(OSSHeaders.COPY_OBJECT_SOURCE_IF_MODIFIED_SINCE, "2021-12-09T07:01:56.000Z");
+                // uploadPartCopyRequest.setHeaders(headers);*/
                     UploadPartCopyResult uploadPartCopyResult = ossClient.uploadPartCopy(uploadPartCopyRequest);
                     // 将返回的分片ETag保存到partETags中。
                     partETags.add(uploadPartCopyResult.getPartETag());
@@ -597,10 +618,11 @@ public class AliOSSUtils {
         // 新增分享记录
         ShareFile shareFile = new ShareFile();
         shareFile.setTitle(title);
-        shareFile.setPath(destinationKey);
-        shareFile.setId(userId);
+        shareFile.setPath(folder);
+        shareFile.setUserId(userId);
+        shareFile.setOpen(shareFileDTO.getOpen());
         shareFileService.save(shareFile);
 
-        return new URL("http://localhost:8080/#/share/" + destinationKey);
+        return new URL("http://localhost:8080/#/share/" + folder);
     }
 }
