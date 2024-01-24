@@ -10,5 +10,5 @@ public class ShareFile {
     private String title;
     private String path;
     private Long userId;
-    private boolean open;
+    private Boolean open;
 }

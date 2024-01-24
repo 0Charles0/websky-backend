@@ -2,10 +2,8 @@ package com.cen.websky.utils;
 
 import com.aliyun.oss.*;
 import com.aliyun.oss.model.*;
-import com.cen.websky.pojo.vo.FileVO;
 import com.cen.websky.pojo.dto.ShareFileDTO;
-import com.cen.websky.pojo.po.ShareFile;
-import com.cen.websky.service.ShareFileService;
+import com.cen.websky.pojo.vo.FileVO;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
@@ -15,7 +13,6 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,9 +31,8 @@ public class AliOSSUtils {
     private final String video;
     private final String audio;
     private final String other;
-    private final ShareFileService shareFileService;
 
-    public AliOSSUtils(AliOSSProperties aliOSSProperties, CategoryProperties categoryProperties, ShareFileService shareFileService) {
+    public AliOSSUtils(AliOSSProperties aliOSSProperties, CategoryProperties categoryProperties) {
         bucketName = aliOSSProperties.getBucketName();
         // 创建OSSClient实例。
         ossClient = new OSSClientBuilder().build(aliOSSProperties.getEndpoint(), aliOSSProperties.getAccessKeyId(), aliOSSProperties.getAccessKeySecret());
@@ -46,8 +42,6 @@ public class AliOSSUtils {
         video = categoryProperties.getVideo();
         audio = categoryProperties.getAudio();
         other = picture + "," + document + "," + video + "," + audio;
-
-        this.shareFileService = shareFileService;
     }
 
     /**
@@ -415,7 +409,7 @@ public class AliOSSUtils {
         try {
             ZipOutputStream zos = new ZipOutputStream(response.getOutputStream());
             for (String fileName : fileNames) {
-                fileName = userId + "/" + fileName;
+                fileName = (userId == null ? "share" : userId) + "/" + fileName;
                 if (fileName.endsWith("/")) {
                     // 如果是文件夹，则递归处理文件夹中的文件
                     addFilesToZip(fileName, fileName.substring(0, fileName.lastIndexOf('/', fileName.length() - 2) + 1), zos);
@@ -457,6 +451,10 @@ public class AliOSSUtils {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void downLoad(String[] fileNames, HttpServletResponse response) {
+        downLoad(fileNames, response, null);
     }
 
     /**
@@ -519,9 +517,14 @@ public class AliOSSUtils {
         return "其它";
     }
 
-    public URL share(ShareFileDTO shareFileDTO, Long userId) throws MalformedURLException {
+    public String share(ShareFileDTO shareFileDTO, Long userId) {
         String title = shareFileDTO.getTitle();
         String[] files = shareFileDTO.getFiles();
+        // 检查 files 是否为空
+        if (files == null || files.length == 0) {
+            throw new IllegalArgumentException("Files cannot be empty or null.");
+        }
+
         String folder = "share/" + UUID.randomUUID() + "/";
         try {
             List<String> fileDTOs = new ArrayList<>();
@@ -615,14 +618,7 @@ public class AliOSSUtils {
                 ossClient.shutdown();
             }
         }*/
-        // 新增分享记录
-        ShareFile shareFile = new ShareFile();
-        shareFile.setTitle(title);
-        shareFile.setPath(folder);
-        shareFile.setUserId(userId);
-        shareFile.setOpen(shareFileDTO.getOpen());
-        shareFileService.save(shareFile);
 
-        return new URL("http://localhost:8080/#/share/" + folder);
+        return folder;
     }
 }
