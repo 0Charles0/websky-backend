@@ -6,6 +6,7 @@ import java.net.URL;
 
 @Data
 public class ShareListVO {
+    private String shareFileId;
     private String title;
     private URL url;
 }

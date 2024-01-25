@@ -21,7 +21,7 @@ public class EmailServiceImpl implements EmailService {
         message.setFrom(from);
         message.setTo(to);
         message.setSubject("验证链接");
-        message.setText("点击链接完成注册：http://localhost:8080/#/register/" + to + ":" + code);
+        message.setText("打开链接完成注册：http://localhost:8080/#/register/" + to + ":" + code);
         mailSender.send(message);
     }
 }

@@ -51,4 +51,13 @@ public class UserController {
         }
         return Result.success("密码修改成功");
     }
+    @PatchMapping("/updateUserName")
+    public Result updateUserName(String userName, HttpServletRequest request) {
+        try {
+            userService.updateUserName(userName, ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+        } catch (Exception e) {
+            return Result.error("用户名修改失败");
+        }
+        return Result.success("用户名修改成功");
+    }
 }

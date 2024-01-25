@@ -22,4 +22,6 @@ public interface ShareFileService extends IService<ShareFile> {
     List<ShareListVO> shareList(Long userId) throws MalformedURLException;
 
     List<ShareListVO> shareSearch(String shareSearchName) throws MalformedURLException;
+
+    void delete(Long shareFileId, Long userId);
 }

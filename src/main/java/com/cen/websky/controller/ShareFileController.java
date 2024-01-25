@@ -74,4 +74,9 @@ public class ShareFileController {
     public void download(String[] fileNames, HttpServletResponse response, HttpServletRequest request) {
         aliOSSUtils.downLoad(fileNames, response);
     }
+
+    @DeleteMapping("/delete")
+    public void delete(@RequestParam String shareFileId, HttpServletRequest request) {
+        shareFileService.delete(Long.parseLong(shareFileId), ((Claims) request.getAttribute("userInfo")).get("id", Long.class));
+    }
 }

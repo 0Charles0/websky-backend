@@ -1,5 +1,6 @@
 package com.cen.websky.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cen.websky.mapper.ShareFileMapper;
 import com.cen.websky.pojo.dto.ShareFileDTO;
@@ -78,10 +79,18 @@ public class ShareFileServiceImpl extends ServiceImpl<ShareFileMapper, ShareFile
         return getShareListVOs(shareFiles);
     }
 
+    @Override
+    public void delete(Long shareFileId, Long userId) {
+        remove(Wrappers.<ShareFile>lambdaQuery()
+                .eq(ShareFile::getId, shareFileId)
+                .eq(ShareFile::getUserId, userId));
+    }
+
     private List<ShareListVO> getShareListVOs(List<ShareFile> shareFiles) throws MalformedURLException {
         List<ShareListVO> shareListVOs = new ArrayList<>();
         for (ShareFile shareFile : shareFiles) {
             ShareListVO shareListVO = new ShareListVO();
+            shareListVO.setShareFileId(shareFile.getId().toString());
             shareListVO.setTitle(shareFile.getTitle());
             shareListVO.setUrl(new URL("http://localhost:8080/#/share/" + shareFile.getId()));
             shareListVOs.add(shareListVO);

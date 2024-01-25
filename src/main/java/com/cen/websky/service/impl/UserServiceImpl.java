@@ -82,6 +82,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (getByEmail(user.getEmail()) == null) {
             // 初始化用户，账号未启用（status 字段默认为 0/false）
             save(user);
+            Long id = getByEmail(user.getEmail()).getId();
+            user.setImage("https://websky-cloud.oss-cn-shenzhen.aliyuncs.com/image/" + id + "/websky%E5%A4%B4%E5%83%8F.jpg");
+            user.setId(id);
+            updateById(user);
             // 生成验证码
             String code = ValidateCodeUtils.generateValidateCode(4);
             // 发送验证邮件
@@ -118,6 +122,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public boolean verifyTokenTime(Long id, LocalDateTime createTime) {
         return !createTime.isBefore(getById(id).getLogoutTime());
+    }
+
+    @Override
+    public void updateUserName(String userName, Long id) {
+        User user = getById(id);
+        user.setUserName(userName);
+        updateById(user);
     }
 
     @Override

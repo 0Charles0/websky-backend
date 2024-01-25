@@ -69,4 +69,6 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean verifyTokenTime(Long id, LocalDateTime createTime);
+
+    void updateUserName(String userName, Long id);
 }
