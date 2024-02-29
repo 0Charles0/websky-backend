@@ -51,6 +51,7 @@ public class UserController {
         }
         return Result.success("密码修改成功");
     }
+
     @PatchMapping("/updateUserName")
     public Result updateUserName(String userName, HttpServletRequest request) {
         try {
