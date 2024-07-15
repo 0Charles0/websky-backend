@@ -1,3 +1,4 @@
+/*
 package com.cen.websky.pojo.query;
 
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
@@ -38,4 +39,4 @@ public class PageQuery {
     public <T> Page<T> toMpPageDefaultSortByUpdateTimeDesc() {
         return toMpPage("update_time", false);
     }
-}
+}*/

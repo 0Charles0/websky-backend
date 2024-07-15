@@ -6,9 +6,32 @@ spring:
     url: jdbc:mysql://localhost:3307/websky
     username: root
     password: 123456
+  mail:
+    host: smtp.qq.com
+    username: 1913896486@qq.com
+    password: 邮箱授权码
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
 mybatis-plus:
   type-aliases-package: com.cen.websky.entity
-  global-config:
-    db-config:
-      id-type: auto # 全局id类型为自增长
+  #  global-config:
+  #    db-config:
+  #      id-type: AUTO # 全局id类型为自增长
   mapper-locations: "classpath*:/mapper/**/*.xml" # Mapper.xml文件地址，当前这个是默认值。
+aliyun:
+  oss:
+    accessKeyId: 身份ID
+    accessKeySecret: 身份密钥
+    bucketName: websky-cloud
+    endpoint: https://oss-cn-shenzhen.aliyuncs.com
+category:
+  picture: ".bmp,.dib,.gif,.heic,.ico,.jfif,.jpe,.jpeg,.jpg,.jxr,.png,.raw,.svg,.tif,.tiff,.webp,.xbm,.xpm"
+  document: ".csv,.dbf,.dif,.doc,.docm,.docx,.dot,.dotm,.dotx,.dps,.dpt,.et,.ett,.htm,.html,.json,.mht,.mhtml,.odp,\
+            .ods,.odt,.pdf,.pot,.potm,.potx,.ppa,.ppam,.pps,.ppsm,.ppsx,.ppt,.pptm,.pptx,.prn,.rtf,.slk,.txt,.wps,.wpt,\
+            .xla,.xlam,.xls,.xlsb,.xlsm,.xlsx,.xlt,.xltm,.xltx,.xml,.xps"
+  video: "3g2,3gp,3gpp,amv,asf,avi,divx,dpg,dvr-ms,evo,f4v,flv,ifo,k3g,m1v,m2t,m2ts,m2v,m4b,m4p,m4v,mkv,mov,mp2v,mp4,\
+          mpv2,mpe,mpeg,mpg,mts,nsv,nsr,ogm,ogv,qt,ram,rm,rmvb,rpm,skm,tp,trp,ts,vob,webm,wtv,wmp,wmv"
+  audio: "aac,aiff,amr,ape,cda,dts,dtshd,dsf,eac3,flac,m1a,m2a,m4a,mka,mod,mp2,mp3,mpa,mpc,ogg,opus,ra,tak,tta,wav,wma,\
+          wv"

@@ -1,3 +1,4 @@
+/*
 package com.cen.websky.pojo.query;
 
 import io.swagger.annotations.ApiModel;
@@ -17,4 +18,4 @@ public class UserQuery extends PageQuery {
     private Integer minBalance;
     @ApiModelProperty("余额最大值")
     private Integer maxBalance;
-}
+}*/
